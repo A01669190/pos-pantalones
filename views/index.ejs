@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>POS Pantalones Pro</title>
+    <title>POS Pantalones Inteligente</title>
     <style>
-        .product-card { border: none; border-radius: 12px; overflow: hidden; transition: 0.3s; cursor: pointer; position: relative; }
+        .product-card { border: none; border-radius: 12px; overflow: hidden; transition: 0.3s; cursor: pointer; position: relative; background: white; }
         .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .img-container { height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; }
-        .img-container img { max-height: 100%; max-width: 100%; object-fit: cover; }
-        .btn-delete { position: absolute; top: 8px; right: 8px; z-index: 10; border-radius: 50%; width: 30px; height: 30px; padding: 0; line-height: 1; }
-        #cart-container { background: white; border-radius: 15px; height: 85vh; display: flex; flex-direction: column; position: sticky; top: 20px; }
+        .img-container { height: 160px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
+        .img-container img { max-height: 100%; width: auto; object-fit: contain; }
+        .btn-delete { position: absolute; top: 8px; right: 8px; z-index: 10; border-radius: 50%; width: 28px; height: 28px; padding: 0; line-height: 1; opacity: 0.7; }
+        .btn-delete:hover { opacity: 1; }
+        #cart-container { background: white; border-radius: 15px; height: 85vh; display: flex; flex-direction: column; position: sticky; top: 20px; border: 1px solid #eee; }
+        .stock-alert { font-weight: bold; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; }
     </style>
 </head>
 <body class="bg-light">
@@ -20,15 +22,15 @@
     <div class="row">
         <div class="col-md-8">
             <div class="d-flex gap-2 mb-4">
-                <input type="text" id="scanner" class="form-control form-control-lg" placeholder="🔍 Escanea o escribe código..." autofocus>
-                <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modalNuevo">➕ Nuevo</button>
+                <input type="text" id="scanner" class="form-control form-control-lg shadow-sm" placeholder="🔍 Escanea o escribe código..." autofocus>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevo">➕ Agregar Pantalón</button>
             </div>
 
             <div class="row g-3">
                 <% productos.forEach(p => { %>
                     <div class="col-6 col-md-3">
                         <div class="card product-card h-100 shadow-sm">
-                            <form action="/eliminar-articulo" method="POST" onsubmit="return confirm('¿Eliminar este pantalón?')">
+                            <form action="/eliminar-articulo" method="POST" onsubmit="return confirm('¿Eliminar este artículo?')">
                                 <input type="hidden" name="id" value="<%= p.id %>">
                                 <button class="btn btn-danger btn-delete">×</button>
                             </form>
@@ -38,13 +40,18 @@
                                     <img src="<%= p.imagen %>" onerror="this.src='https://via.placeholder.com/150?text=Pantalón'">
                                 </div>
                                 <div class="card-body p-2 text-center">
-                                    <h6 class="mb-1 text-truncate"><%= p.nombre %></h6>
-                                    <h5 class="text-primary">$<%= p.precio %></h5>
-                                    <% if(p.stock <= 0) { %>
-                                        <span class="badge bg-danger">SIN STOCK</span>
-                                    <% } else { %>
-                                        <small class="text-muted">Bodega: <b><%= p.stock %></b></small>
-                                    <% } %>
+                                    <h6 class="text-truncate mb-1"><%= p.nombre %></h6>
+                                    <h5 class="text-dark fw-bold">$<%= p.precio %></h5>
+                                    
+                                    <div class="mt-2">
+                                        <% if(p.stock <= 0) { %>
+                                            <span class="stock-alert bg-danger text-white">SIN STOCK</span>
+                                        <% } else if(p.stock <= 5) { %>
+                                            <span class="stock-alert bg-warning text-dark">¡QUEDAN <%= p.stock %>!</span>
+                                        <% } else { %>
+                                            <span class="stock-alert bg-light text-muted">Stock: <%= p.stock %></span>
+                                        <% } %>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -54,18 +61,18 @@
         </div>
 
         <div class="col-md-4">
-            <div id="cart-container" class="p-3 shadow-sm">
-                <h4>Venta Actual</h4>
+            <div id="cart-container" class="p-3">
+                <h4 class="border-bottom pb-2">Ticket de Venta</h4>
                 <div class="flex-grow-1 overflow-auto">
-                    <table class="table">
+                    <table class="table align-middle">
                         <tbody id="lista-carrito"></tbody>
                     </table>
                 </div>
                 <div class="border-top pt-3">
-                    <div class="d-flex justify-content-between h4">
-                        <span>Total:</span> <span id="total-text">$0.00</span>
+                    <div class="d-flex justify-content-between h3">
+                        <span>Total:</span> <span id="total-text" class="text-success">$0.00</span>
                     </div>
-                    <button class="btn btn-success w-100 btn-lg mt-2" onclick="procesarPago()">COBRAR</button>
+                    <button class="btn btn-success w-100 btn-lg mt-2 fw-bold" onclick="procesarPago()">REGISTRAR VENTA</button>
                 </div>
             </div>
         </div>
@@ -75,15 +82,15 @@
 <div class="modal fade" id="modalNuevo" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" action="/agregar" method="POST" enctype="multipart/form-data">
-            <div class="modal-header"><h5>Registrar Pantalón</h5></div>
+            <div class="modal-header bg-primary text-white"><h5>Registrar Nuevo Producto</h5></div>
             <div class="modal-body">
-                <input type="text" name="codigo" class="form-control mb-2" placeholder="Código de Barras" required>
-                <input type="text" name="nombre" class="form-control mb-2" placeholder="Nombre (Ej: Jean Levi's)" required>
-                <input type="number" name="precio" class="form-control mb-2" placeholder="Precio" required>
-                <input type="number" name="stock" class="form-control mb-2" placeholder="Stock Inicial" required>
-                <input type="file" name="foto" class="form-control" accept="image/*">
+                <div class="mb-2"><label>Código de Barras:</label><input type="text" name="codigo" class="form-control" required></div>
+                <div class="mb-2"><label>Nombre del Pantalón:</label><input type="text" name="nombre" class="form-control" required></div>
+                <div class="mb-2"><label>Precio de Venta:</label><input type="number" step="0.01" name="precio" class="form-control" required></div>
+                <div class="mb-2"><label>Stock Inicial:</label><input type="number" name="stock" class="form-control" required></div>
+                <div class="mb-2"><label>Foto:</label><input type="file" name="foto" class="form-control" accept="image/*"></div>
             </div>
-            <div class="modal-footer"><button class="btn btn-primary w-100">Guardar</button></div>
+            <div class="modal-footer"><button class="btn btn-primary w-100">Guardar en Sistema</button></div>
         </form>
     </div>
 </div>
@@ -92,13 +99,12 @@
 <script>
     let carrito = [];
 
-    // Lógica Escáner
     document.getElementById('scanner').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             fetch(`/api/producto/${e.target.value}`)
                 .then(res => res.json())
                 .then(p => {
-                    if (p.error) alert("No existe");
+                    if (p.error) alert("Este código no existe.");
                     else agregarAlCarrito(p.id, p.nombre, p.precio, p.stock);
                     e.target.value = '';
                 });
@@ -107,10 +113,10 @@
 
     function agregarAlCarrito(id, nombre, precio, stock) {
         const item = carrito.find(i => i.id === id);
-        const cantActual = item ? item.cantidad : 0;
+        const cantEnCarrito = item ? item.cantidad : 0;
 
-        if (cantActual >= stock) {
-            alert("No hay más stock de este artículo.");
+        if (cantEnCarrito >= stock) {
+            alert("No puedes agregar más, no hay suficiente stock.");
             return;
         }
 
@@ -126,10 +132,10 @@
         carrito.forEach((i, idx) => {
             total += i.precio * i.cantidad;
             lista.innerHTML += `<tr>
-                <td>${i.nombre}</td>
-                <td>x${i.cantidad}</td>
-                <td>$${i.precio * i.cantidad}</td>
-                <td><button class="btn btn-sm text-danger" onclick="carrito.splice(${idx},1);render()">🗑️</button></td>
+                <td><b>${i.nombre}</b></td>
+                <td>${i.cantidad} pz</td>
+                <td>$${(i.precio * i.cantidad).toFixed(2)}</td>
+                <td><button class="btn btn-sm btn-light text-danger" onclick="carrito.splice(${idx},1);render()">✕</button></td>
             </tr>`;
         });
         document.getElementById('total-text').innerText = '$' + total.toFixed(2);
@@ -137,12 +143,14 @@
 
     function procesarPago() {
         if (carrito.length === 0) return;
+        if (!confirm("¿Deseas finalizar la venta?")) return;
+        
         fetch('/vender', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ carrito })
         }).then(() => {
-            alert("Venta exitosa");
+            alert("Venta registrada y stock actualizado.");
             location.reload();
         });
     }
