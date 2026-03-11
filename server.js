@@ -3,10 +3,16 @@ const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
 const app = express();
 
-const db = new sqlite3.Database('./pos.db');
+// --- CONFIGURACIÓN DE BASE DE DATOS ---
+// Usamos /data/pos.db para que Render guarde los datos en el Disk
+const dbPath = '/data/pos.db';
+const db = new sqlite3.Database(dbPath);
 
+// --- CONFIGURACIÓN DE IMÁGENES ---
 const storage = multer.diskStorage({
     destination: 'public/uploads/',
     filename: (req, file, cb) => {
@@ -20,11 +26,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
+// --- CREACIÓN DE TABLAS ---
 db.serialize(() => {
     db.run("CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY AUTOINCREMENT, codigo TEXT UNIQUE, nombre TEXT, precio REAL, stock INTEGER, imagen TEXT)");
     db.run("CREATE TABLE IF NOT EXISTS ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, total REAL, fecha DATETIME DEFAULT CURRENT_TIMESTAMP)");
 });
 
+// --- RUTAS ---
 app.get('/', (req, res) => {
     db.all("SELECT * FROM productos", [], (err, productos) => {
         res.render('index', { productos: productos || [] });
@@ -39,7 +47,7 @@ app.get('/api/producto/:codigo', (req, res) => {
 
 app.post('/agregar', upload.single('foto'), (req, res) => {
     const { codigo, nombre, precio, stock } = req.body;
-    const imagen = req.file ? '/uploads/' + req.file.filename : 'https://via.placeholder.com/150?text=Pantalón';
+    const imagen = req.file ? '/uploads/' + req.file.filename : 'https://via.placeholder.com/150?text=Pantalon';
     const query = `INSERT INTO productos (codigo, nombre, precio, stock, imagen) VALUES (?, ?, ?, ?, ?) 
                    ON CONFLICT(codigo) DO UPDATE SET nombre=excluded.nombre, precio=excluded.precio, stock=stock+excluded.stock, imagen=excluded.imagen`;
     db.run(query, [codigo, nombre, precio, stock, imagen], () => res.redirect('/'));
@@ -60,6 +68,7 @@ app.post('/vender', (req, res) => {
     db.run("INSERT INTO ventas (total) VALUES (?)", [totalVenta], () => res.json({ success: true }));
 });
 
+// --- ENCENDIDO DEL SERVIDOR (IMPORTANTE PARA RENDER) ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Sistema lanzado exitosamente en el puerto ${PORT}`);
