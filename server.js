@@ -61,4 +61,6 @@ app.post('/vender', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Sistema en puerto ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Sistema lanzado exitosamente en el puerto ${PORT}`);
+});
