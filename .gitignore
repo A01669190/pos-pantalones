@@ -1,3 +1,4 @@
-node_modules
+node_modules/
 pos.db
 public/uploads/*
+.DS_Store
