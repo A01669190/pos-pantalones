@@ -7,10 +7,15 @@ const fs = require('fs');
 
 const app = express();
 
-// --- CONFIGURACIÓN DE BASE DE DATOS ---
-// Usamos /data/pos.db para que Render guarde los datos en el Disk
-const dbPath = '/data/pos.db';
-const db = new sqlite3.Database(dbPath);
+// --- CONFIGURACIÓN DE BASE DE DATOS INTELIGENTE ---
+// Si detecta que está en Render, usa el Disco (/data), si no, usa la carpeta local
+const isRender = process.env.RENDER === 'true';
+const dbPath = isRender ? '/data/pos.db' : './pos.db';
+
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) console.error("❌ Error DB:", err.message);
+    else console.log(`🏠 Base de datos en: ${dbPath}`);
+});
 
 // --- CONFIGURACIÓN DE IMÁGENES ---
 const storage = multer.diskStorage({
@@ -68,9 +73,8 @@ app.post('/vender', (req, res) => {
     db.run("INSERT INTO ventas (total) VALUES (?)", [totalVenta], () => res.json({ success: true }));
 });
 
-// --- ENCENDIDO DEL SERVIDOR (IMPORTANTE PARA RENDER) ---
+// --- ENCENDIDO DEL SERVIDOR (CRUCIAL PARA RENDER) ---
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Puerto: ${PORT}`);
+    console.log(`🚀 Puerto activo: ${PORT}`);
 });
